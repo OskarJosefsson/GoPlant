@@ -82,6 +82,15 @@ func commandSearch(cfg *config, args []string) error {
 
 	search := strings.Join(args, " ")
 	fmt.Println("Searching:", search)
+	searchResult, err := SearchPlants("", search)
+
+	if err != nil {
+		return nil
+	}
+
+	for _, s := range searchResult.Data {
+		println(s.Name)
+	}
 
 	return nil
 }
