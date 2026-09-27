@@ -94,3 +94,22 @@ func commandSearch(cfg *config, args []string) error {
 
 	return nil
 }
+
+func commandAddPlant(cfg *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("Please provide a search term.")
+		return nil
+	}
+
+	add := strings.Join(args, " ")
+	fmt.Println("Searching:", add)
+	searchResult, err := AddPlant(add)
+
+	if err != nil {
+		return nil
+	}
+
+	fmt.Print((searchResult))
+
+	return nil
+}

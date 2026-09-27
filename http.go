@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -36,13 +37,10 @@ func GetToken() string {
 	return os.Getenv("PLANT_API_KEY")
 }
 
-func SearchPlants(url string, searchTerm string) (searchResponse, error) {
+func SearchPlants(searchTerm string) (searchResponse, error) {
 
 	token := GetToken()
-
-	if url == "" {
-		url = baseUrl + "/search?token=" + token + "&q=" + searchTerm
-	}
+	url := baseUrl + "/search?token=" + token + "&q=" + searchTerm
 
 	response, err := SendRequest(url)
 	if err != nil {
@@ -63,4 +61,13 @@ func SearchPlants(url string, searchTerm string) (searchResponse, error) {
 
 	return search, nil
 
+}
+
+func AddPlant(add string) (any, any) {
+	panic("unimplemented")
+
+	token := GetToken()
+	url := baseUrl + "/search?token=" + token + "&q=" + add
+
+	fmt.Print(url)
 }
