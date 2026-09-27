@@ -73,3 +73,15 @@ func commandHelp(cfg *config, args []string) error {
 	}
 	return nil
 }
+
+func commandSearch(cfg *config, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("Please provide a search term.")
+		return nil
+	}
+
+	search := strings.Join(args, " ")
+	fmt.Println("Searching:", search)
+
+	return nil
+}
