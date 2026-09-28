@@ -82,10 +82,10 @@ func commandSearch(cfg *config, args []string) error {
 
 	search := strings.Join(args, " ")
 	fmt.Println("Searching:", search)
-	searchResult, err := SearchPlants("", search)
+	searchResult, err := SearchPlants(search)
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	for _, s := range searchResult.Data {
@@ -102,14 +102,31 @@ func commandAddPlant(cfg *config, args []string) error {
 	}
 
 	add := strings.Join(args, " ")
-	fmt.Println("Searching:", add)
-	searchResult, err := AddPlant(add)
-
+	fmt.Println("Adding:", add)
+	searchResult, err := SearchPlants(add)
 	if err != nil {
-		return nil
+		return err
+	}
+	if len(searchResult.Data) == 0 {
+		return fmt.Errorf("no plants found for %q", add)
 	}
 
-	fmt.Print((searchResult))
+	GetResult, err := GetFullPlant(searchResult.Data[0].Slug)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("ID: %d\nCommon name: %s\nScientific name: %s\nFamily: %s\nGenus: %s\nStatus: %s\nYear: %d\nImage: %s\n",
+		GetResult.ID,
+		GetResult.CommonName,
+		GetResult.ScientificName,
+		GetResult.Family.Name,
+		GetResult.Genus.Name,
+		GetResult.Status,
+		GetResult.Year,
+		GetResult.ImageURL,
+	)
 
 	return nil
 }

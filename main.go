@@ -24,6 +24,11 @@ func main() {
 				description: "Search for plants",
 				callback:    commandSearch,
 			},
+			"add": {
+				name:        "add",
+				description: "adding plant to your list of plants",
+				callback:    commandAddPlant,
+			},
 		},
 	}
 	startRepl(cfg)
