@@ -24,6 +24,17 @@ profile.cov
 go.work
 go.work.sum
 
+# Local SQLite databases and journal files
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Binary produced by `go build` at the module root
+/GoPlant
+
 # env file
 .env
 
