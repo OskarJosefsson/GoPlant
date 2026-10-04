@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 type config struct {
 	commands    map[string]cliCommand
+	store       *plantStore
 	NextUrl     string
 	PreviousUrl string
 }
@@ -116,6 +118,9 @@ func commandAddPlant(cfg *config, args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := cfg.store.AddPlant(context.Background(), GetResult); err != nil {
+		return err
+	}
 
 	fmt.Printf("ID: %d\nCommon name: %s\nScientific name: %s\nFamily: %s\nGenus: %s\nStatus: %s\nYear: %d\nImage: %s\n",
 		GetResult.ID,
@@ -127,6 +132,32 @@ func commandAddPlant(cfg *config, args []string) error {
 		GetResult.Year,
 		GetResult.ImageURL,
 	)
+
+	return nil
+}
+
+func commandListPlants(cfg *config, args []string) error {
+	plants, err := cfg.store.ReadAllPlants(context.Background())
+	if err != nil {
+		return err
+	}
+	if len(plants) == 0 {
+		fmt.Println("No plants have been added yet.")
+		return nil
+	}
+
+	for _, plant := range plants {
+		fmt.Printf("ID: %d\nCommon name: %s\nScientific name: %s\nFamily: %s\nGenus: %s\nStatus: %s\nYear: %d\nImage: %s\n",
+			plant.ID,
+			plant.CommonName,
+			plant.ScientificName,
+			plant.Family.Name,
+			plant.Genus.Name,
+			plant.Status,
+			plant.Year,
+			plant.ImageURL,
+		)
+	}
 
 	return nil
 }

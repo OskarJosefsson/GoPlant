@@ -35,7 +35,7 @@ func run() error {
 	}
 	defer db.Close()
 
-	startRepl(newConfig())
+	startRepl(newConfig(&plantStore{db: db}))
 	return nil
 }
 
@@ -66,8 +66,9 @@ func openDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
-func newConfig() *config {
+func newConfig(store *plantStore) *config {
 	return &config{
+		store: store,
 		commands: map[string]cliCommand{
 			"help": {
 				name:        "help",
@@ -83,6 +84,11 @@ func newConfig() *config {
 				name:        "add",
 				description: "adding plant to your list of plants",
 				callback:    commandAddPlant,
+			},
+			"list": {
+				name:        "list",
+				description: "List plants saved in the SQL store",
+				callback:    commandListPlants,
 			},
 		},
 	}
