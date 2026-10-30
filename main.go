@@ -90,6 +90,11 @@ func newConfig(store *plantStore) *config {
 				description: "List plants saved in the SQL store",
 				callback:    commandListPlants,
 			},
+			"stations": {
+				name:        "stations",
+				description: "List SMHI stations or show latest temperature and daily rainfall for a station",
+				callback:    commandListWeatherStations,
+			},
 		},
 	}
 }

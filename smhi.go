@@ -1,6 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sort"
 	"time"
 )
 
@@ -93,4 +97,110 @@ type stationSetEntry struct {
 type stationSetResponse struct {
 	Parameter observationParameter `json:"parameter"`
 	Station   []stationSetEntry    `json:"station"`
+}
+
+type stationWeather struct {
+	Temperature weatherValue
+	Rainfall    weatherValue
+}
+
+func listStations() (stationListResponse, error) {
+	temperatureStations, err := fetchStations(ParamAirTempHourly)
+	if err != nil {
+		return stationListResponse{}, err
+	}
+
+	rainStations, err := fetchStations(ParamPrecipDaily)
+	if err != nil {
+		return stationListResponse{}, err
+	}
+
+	rainIDs := make(map[int]struct{}, len(rainStations.Station))
+	for _, station := range rainStations.Station {
+		if station.Active {
+			rainIDs[station.ID] = struct{}{}
+		}
+	}
+
+	common := stationListResponse{}
+	for _, station := range temperatureStations.Station {
+		if !station.Active {
+			continue
+		}
+		if _, ok := rainIDs[station.ID]; ok {
+			common.Station = append(common.Station, station)
+		}
+	}
+
+	sort.Slice(common.Station, func(i, j int) bool {
+		return common.Station[i].Name < common.Station[j].Name
+	})
+	return common, nil
+}
+
+func latestStationWeather(stationID int) (stationWeather, error) {
+	temperature, err := fetchLatestObservation(ParamAirTempHourly, stationID)
+	if err != nil {
+		return stationWeather{}, err
+	}
+	rainfall, err := fetchLatestObservation(ParamPrecipDaily, stationID)
+	if err != nil {
+		return stationWeather{}, err
+	}
+
+	return stationWeather{
+		Temperature: latestValue(temperature.Value),
+		Rainfall:    latestValue(rainfall.Value),
+	}, nil
+}
+
+func fetchLatestObservation(parameterID, stationID int) (observationResponse, error) {
+	url := fmt.Sprintf("%s/parameter/%d/station/%d/period/latest-day/data.json", smhiBaseURL, parameterID, stationID)
+	response, err := httpClient.Get(url)
+	if err != nil {
+		return observationResponse{}, fmt.Errorf("fetch latest observation for parameter %d at station %d: %w", parameterID, stationID, err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return observationResponse{}, fmt.Errorf("fetch latest observation for parameter %d at station %d: SMHI returned %s", parameterID, stationID, response.Status)
+	}
+
+	var observation observationResponse
+	if err := json.NewDecoder(response.Body).Decode(&observation); err != nil {
+		return observationResponse{}, fmt.Errorf("decode latest observation for parameter %d at station %d: %w", parameterID, stationID, err)
+	}
+	if len(observation.Value) == 0 {
+		return observationResponse{}, fmt.Errorf("no latest observation for parameter %d at station %d", parameterID, stationID)
+	}
+	return observation, nil
+}
+
+func latestValue(values []weatherValue) weatherValue {
+	latest := values[0]
+	for _, value := range values[1:] {
+		if value.Time().After(latest.Time()) {
+			latest = value
+		}
+	}
+	return latest
+}
+
+func fetchStations(parameterID int) (stationListResponse, error) {
+	url := fmt.Sprintf("%s/parameter/%d.json", smhiBaseURL, parameterID)
+	response, err := httpClient.Get(url)
+	if err != nil {
+		return stationListResponse{}, fmt.Errorf("fetch stations for parameter %d: %w", parameterID, err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return stationListResponse{}, fmt.Errorf("fetch stations for parameter %d: SMHI returned %s", parameterID, response.Status)
+	}
+
+	var stations stationListResponse
+	if err := json.NewDecoder(response.Body).Decode(&stations); err != nil {
+		return stationListResponse{}, fmt.Errorf("decode stations for parameter %d: %w", parameterID, err)
+	}
+	return stations, nil
 }

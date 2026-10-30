@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type config struct {
@@ -159,5 +160,47 @@ func commandListPlants(cfg *config, args []string) error {
 		)
 	}
 
+	return nil
+}
+
+func commandListWeatherStations(cfg *config, args []string) error {
+	stations, err := listStations()
+	if err != nil {
+		return err
+	}
+	if len(args) > 0 {
+		name := strings.Join(args, " ")
+		for _, station := range stations.Station {
+			if !strings.EqualFold(station.Name, name) {
+				continue
+			}
+
+			weather, err := latestStationWeather(station.ID)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s (station %d)\n", station.Name, station.ID)
+			fmt.Printf("Temperature: %s °C at %s\n",
+				weather.Temperature.Value,
+				weather.Temperature.Time().Format(time.RFC3339))
+			rainDate := weather.Rainfall.Ref
+			if rainDate == "" {
+				rainDate = weather.Rainfall.Time().Format("2006-01-02")
+			}
+			fmt.Printf("Daily rainfall: %s mm for %s\n", weather.Rainfall.Value, rainDate)
+			return nil
+		}
+		return fmt.Errorf("no active station reporting both hourly temperature and daily rainfall named %q", name)
+	}
+	if len(stations.Station) == 0 {
+		fmt.Println("No active stations report both hourly temperature and daily rainfall.")
+		return nil
+	}
+
+	fmt.Printf("%-8s %-32s %10s %11s\n", "ID", "Station", "Latitude", "Longitude")
+	for _, station := range stations.Station {
+		fmt.Printf("%-8d %-32s %10.4f %11.4f\n",
+			station.ID, station.Name, station.Latitude, station.Longitude)
+	}
 	return nil
 }
